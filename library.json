@@ -2,11 +2,11 @@
   "id": "{467A944F-A132-4F2B-B3C8-A3EDCDB28021}",
   "author": "KOSV",
   "name": "EcoFlow",
-  "url": "https://github.com/KOSV83/IPS-Modules",
+  "url": "https://github.com/ManyUselessCode/IPS-EcoFlow",
   "compatibility": {
     "version": "6.0"
   },
-  "version": "1.0",
-  "build": 1,
+  "version": "1.1",
+  "build": 2,
   "date": 1791237600
 }

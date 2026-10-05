@@ -32,9 +32,9 @@
     }
   ],
   "actions": [
-    { "type": "Button", "caption": "Geräte im EcoFlow-Konto auflisten", "onClick": "EFD_ListDevices($id);" },
-    { "type": "Button", "caption": "Verfügbare Datenpunkte anzeigen", "onClick": "EFD_ShowQuotas($id);" },
-    { "type": "Button", "caption": "Jetzt aktualisieren", "onClick": "if (EFD_Update($id)) { echo 'Aktualisiert.'; } else { echo 'Fehler, siehe Meldungen.'; }" }
+    { "type": "Button", "caption": "Geräte im EcoFlow-Konto auflisten", "onClick": "IPS_RequestAction($id, 'ListDevices', '');" },
+    { "type": "Button", "caption": "Verfügbare Datenpunkte anzeigen", "onClick": "IPS_RequestAction($id, 'ShowQuotas', '');" },
+    { "type": "Button", "caption": "Jetzt aktualisieren", "onClick": "IPS_RequestAction($id, 'Update', 'button');" }
   ],
   "status": [
     { "code": 102, "icon": "active", "caption": "Verbunden" },

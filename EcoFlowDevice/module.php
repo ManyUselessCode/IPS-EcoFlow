@@ -39,7 +39,7 @@ class EcoFlowDevice extends IPSModule
         $this->RegisterPropertyInteger('SurplusOnWatt', 800);
         $this->RegisterPropertyInteger('SurplusOffWatt', 200);
 
-        $this->RegisterTimer('Update', 0, 'EFD_Update($_IPS[\'TARGET\']);');
+        $this->RegisterTimer('Update', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'Update\', \'\');');
     }
 
     public function ApplyChanges()
@@ -62,6 +62,27 @@ class EcoFlowDevice extends IPSModule
         $interval = max(10, $this->ReadPropertyInteger('UpdateInterval'));
         $this->SetTimerInterval('Update', $interval * 1000);
         $this->SetStatus(102);
+    }
+
+    /** Buttons im Konfigurationsformular und Timer laufen über RequestAction. */
+    public function RequestAction($Ident, $Value)
+    {
+        switch ($Ident) {
+            case 'Update':
+                $ok = $this->Update();
+                if ($Value === 'button') {
+                    echo $ok ? 'Aktualisiert.' : 'Fehler, siehe Meldungen.';
+                }
+                break;
+            case 'ShowQuotas':
+                $this->ShowQuotas();
+                break;
+            case 'ListDevices':
+                $this->ListDevices();
+                break;
+            default:
+                throw new Exception('Unbekannte Aktion: ' . $Ident);
+        }
     }
 
     // ------------------------------------------------------------------
