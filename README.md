@@ -22,13 +22,13 @@ Bindet EcoFlow-Geräte (PowerOcean, PowerStream, STREAM, Delta, Wallbox, Smart P
 
 ## Funktionen für Skripte
 ```php
-EFD_Update($id);                                   // sofort aktualisieren
-EFD_ListDevices($id);                              // Geräte im Konto
-EFD_ShowQuotas($id);                               // alle Datenpunkte mit Wert
-EFD_GetQuota($id, '["20_1.batSoc"]');              // einzelne Werte abfragen
-EFD_SetQuota($id, '{"cmdCode":"WN511_SET_PERMANENT_WATTS_PACK","params":{"permanentWatts":2000}}');
+ECO_Update($id);                                   // sofort aktualisieren
+ECO_ListDevices($id);                              // Geräte im Konto
+ECO_ShowQuotas($id);                               // alle Datenpunkte mit Wert
+ECO_GetQuota($id, '["20_1.batSoc"]');              // einzelne Werte abfragen
+ECO_SetQuota($id, '{"cmdCode":"WN511_SET_PERMANENT_WATTS_PACK","params":{"permanentWatts":2000}}');
 ```
-Der Inhalt für `EFD_SetQuota` hängt vom Gerätetyp ab, siehe EcoFlow-Entwicklerdoku.
+Der Inhalt für `ECO_SetQuota` hängt vom Gerätetyp ab, siehe EcoFlow-Entwicklerdoku.
 
 ## Hinweise
 - Die Daten kommen aus der EcoFlow-Cloud. Ohne Internet oder bei Störungen der Cloud gibt es keine Werte.

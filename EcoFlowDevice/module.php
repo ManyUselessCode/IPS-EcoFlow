@@ -7,7 +7,7 @@ declare(strict_types=1);
  *
  * - Liest zyklisch alle Datenpunkte ("Quotas") eines Geräts und legt dafür Variablen an.
  * - Optional: Berechnung "Stromüberschuss" aus einem frei wählbaren Leistungswert (z. B. Netzleistung).
- * - Schreiben von Parametern über EFD_SetQuota().
+ * - Schreiben von Parametern über ECO_SetQuota().
  *
  * API-Doku: https://developer-eu.ecoflow.com/us/document/introduction
  */
@@ -86,7 +86,7 @@ class EcoFlowDevice extends IPSModule
     }
 
     // ------------------------------------------------------------------
-    // Öffentliche Funktionen (EFD_...)
+    // Öffentliche Funktionen (ECO_...)
     // ------------------------------------------------------------------
 
     /** Alle Datenpunkte abrufen und Variablen aktualisieren. */
@@ -169,7 +169,7 @@ class EcoFlowDevice extends IPSModule
 
     /**
      * Einzelne Datenpunkte abfragen.
-     * Beispiel: EFD_GetQuota(12345, '["20_1.pv1InputWatts","20_1.batSoc"]');
+     * Beispiel: ECO_GetQuota(12345, '["20_1.pv1InputWatts","20_1.batSoc"]');
      */
     public function GetQuota(string $QuotasJson): string
     {
@@ -185,7 +185,7 @@ class EcoFlowDevice extends IPSModule
 
     /**
      * Parameter setzen. Der Inhalt hängt vom Gerät ab (siehe EcoFlow-Doku), die Seriennummer wird ergänzt.
-     * Beispiel PowerStream: EFD_SetQuota(12345, '{"cmdCode":"WN511_SET_PERMANENT_WATTS_PACK","params":{"permanentWatts":2000}}');
+     * Beispiel PowerStream: ECO_SetQuota(12345, '{"cmdCode":"WN511_SET_PERMANENT_WATTS_PACK","params":{"permanentWatts":2000}}');
      */
     public function SetQuota(string $BodyJson): bool
     {
