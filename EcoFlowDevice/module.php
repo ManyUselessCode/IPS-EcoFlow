@@ -13,6 +13,9 @@ declare(strict_types=1);
  */
 class EcoFlowDevice extends IPSModule
 {
+    private $lastDiagnosis = '';
+    private $lastError = '';
+
     private const HOSTS = [
         0 => 'https://api-e.ecoflow.com', // Europa
         1 => 'https://api-a.ecoflow.com', // Amerika
@@ -92,7 +95,7 @@ class EcoFlowDevice extends IPSModule
     /** Alle Datenpunkte abrufen und Variablen aktualisieren. */
     public function Update(): bool
     {
-        $sn = trim($this->ReadPropertyString('SerialNumber'));
+        $sn = $this->GetSerial();
         $data = $this->Request('GET', '/iot-open/sign/device/quota/all', ['sn' => $sn]);
         if ($data === null) {
             return false;
@@ -130,10 +133,10 @@ class EcoFlowDevice extends IPSModule
     /** Gibt alle verfügbaren Datenpunkte mit aktuellem Wert aus (für die Auswahl im Filter). */
     public function ShowQuotas(): string
     {
-        $sn = trim($this->ReadPropertyString('SerialNumber'));
+        $sn = $this->GetSerial();
         $data = $this->Request('GET', '/iot-open/sign/device/quota/all', ['sn' => $sn]);
         if ($data === null) {
-            echo 'Abfrage fehlgeschlagen, Details im Meldungsfenster.';
+            echo 'Abfrage fehlgeschlagen: ' . $this->lastError . PHP_EOL . $this->lastDiagnosis;
             return '';
         }
         ksort($data, SORT_STRING);
@@ -151,7 +154,7 @@ class EcoFlowDevice extends IPSModule
     {
         $data = $this->Request('GET', '/iot-open/sign/device/list', []);
         if ($data === null) {
-            echo 'Abfrage fehlgeschlagen, Details im Meldungsfenster.';
+            echo 'Abfrage fehlgeschlagen: ' . $this->lastError . PHP_EOL . $this->lastDiagnosis;
             return '';
         }
         $lines = [];
@@ -178,7 +181,7 @@ class EcoFlowDevice extends IPSModule
             trigger_error('QuotasJson muss ein JSON-Array sein', E_USER_WARNING);
             return '';
         }
-        $body = ['sn' => trim($this->ReadPropertyString('SerialNumber')), 'params' => ['quotas' => array_values($quotas)]];
+        $body = ['sn' => $this->GetSerial(), 'params' => ['quotas' => array_values($quotas)]];
         $data = $this->Request('POST', '/iot-open/sign/device/quota', [], $body);
         return $data === null ? '' : (string) json_encode($data);
     }
@@ -194,7 +197,7 @@ class EcoFlowDevice extends IPSModule
             trigger_error('BodyJson muss ein JSON-Objekt sein', E_USER_WARNING);
             return false;
         }
-        $body = array_merge(['sn' => trim($this->ReadPropertyString('SerialNumber'))], $body);
+        $body = array_merge(['sn' => $this->GetSerial()], $body);
         $result = $this->Request('PUT', '/iot-open/sign/device/quota', [], $body, true);
         return $result !== null;
     }
@@ -269,6 +272,12 @@ class EcoFlowDevice extends IPSModule
         }
     }
 
+    /** Seriennummer ohne Leer- oder unsichtbare Zeichen. */
+    private function GetSerial(): string
+    {
+        return (string) preg_replace('/[^A-Za-z0-9]/', '', $this->ReadPropertyString('SerialNumber'));
+    }
+
     private function GetFilter(): array
     {
         $raw = $this->ReadPropertyString('QuotaFilter');
@@ -319,7 +328,10 @@ class EcoFlowDevice extends IPSModule
         $pairs[] = 'accessKey=' . $accessKey;
         $pairs[] = 'nonce=' . $nonce;
         $pairs[] = 'timestamp=' . $timestamp;
-        $sign = hash_hmac('sha256', implode('&', $pairs), $secretKey);
+        $signBase = implode('&', $pairs);
+        $sign = hash_hmac('sha256', $signBase, $secretKey);
+        $this->lastDiagnosis = 'URL: ' . $path . ($query !== [] ? '?' . http_build_query($query) : '')
+            . PHP_EOL . 'Signiert: ' . preg_replace('/accessKey=[^&]+/', 'accessKey=***', $signBase);
 
         $url = (self::HOSTS[$this->ReadPropertyInteger('Region')] ?? self::HOSTS[0]) . $path;
         if ($query !== []) {
@@ -327,7 +339,6 @@ class EcoFlowDevice extends IPSModule
         }
 
         $headers = [
-            'Content-Type: application/json;charset=UTF-8',
             'accessKey: ' . $accessKey,
             'nonce: ' . $nonce,
             'timestamp: ' . $timestamp,
@@ -337,12 +348,13 @@ class EcoFlowDevice extends IPSModule
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($curl, CURLOPT_TIMEOUT, 15);
         if ($body !== null) {
+            $headers[] = 'Content-Type: application/json;charset=UTF-8';
             curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($body));
         }
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         $raw = curl_exec($curl);
         $httpCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $curlError = curl_error($curl);
@@ -393,6 +405,7 @@ class EcoFlowDevice extends IPSModule
 
     private function Fail(string $message): void
     {
+        $this->lastError = $message;
         $this->LogMessage($message, KL_ERROR);
         $this->SendDebug('Fehler', $message, 0);
         $this->SetStatus(202);
