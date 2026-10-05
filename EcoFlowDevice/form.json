@@ -1,8 +1,28 @@
 {
   "elements": [
-    { "type": "Label", "caption": "Zugang zur EcoFlow Open API (Schlüssel aus developer-eu.ecoflow.com, Bereich \"Security\")" },
-    { "type": "ValidationTextBox", "name": "AccessKey", "caption": "Access Key", "width": "400px" },
-    { "type": "PasswordTextBox", "name": "SecretKey", "caption": "Secret Key", "width": "400px" },
+    {
+      "type": "Select", "name": "AuthMode", "caption": "Anmeldung",
+      "options": [
+        { "caption": "Entwickler-Schlüssel (offizielle API)", "value": 0 },
+        { "caption": "App-Zugangsdaten (E-Mail/Passwort, z. B. PowerOcean Plus)", "value": 1 }
+      ]
+    },
+    {
+      "type": "ExpansionPanel", "caption": "App-Zugangsdaten",
+      "items": [
+        { "type": "Label", "caption": "Dieselben Zugangsdaten wie in der EcoFlow-App. Inoffizieller Weg, EcoFlow kann ihn ändern." },
+        { "type": "ValidationTextBox", "name": "Email", "caption": "E-Mail", "width": "400px" },
+        { "type": "PasswordTextBox", "name": "Password", "caption": "Passwort", "width": "400px" }
+      ]
+    },
+    {
+      "type": "ExpansionPanel", "caption": "Entwickler-Schlüssel",
+      "items": [
+        { "type": "Label", "caption": "Schlüssel aus developer-eu.ecoflow.com, Bereich \"Security\"" },
+        { "type": "ValidationTextBox", "name": "AccessKey", "caption": "Access Key", "width": "400px" },
+        { "type": "PasswordTextBox", "name": "SecretKey", "caption": "Secret Key", "width": "400px" }
+      ]
+    },
     {
       "type": "Select", "name": "Region", "caption": "Server",
       "options": [
@@ -38,7 +58,7 @@
   ],
   "status": [
     { "code": 102, "icon": "active", "caption": "Verbunden" },
-    { "code": 201, "icon": "inactive", "caption": "Access Key, Secret Key und Seriennummer eintragen" },
-    { "code": 202, "icon": "error", "caption": "Fehler bei der Abfrage (Schlüssel, Server oder Seriennummer prüfen)" }
+    { "code": 201, "icon": "inactive", "caption": "Zugangsdaten und Seriennummer eintragen" },
+    { "code": 202, "icon": "error", "caption": "Fehler bei der Abfrage (Zugangsdaten, Server oder Seriennummer prüfen)" }
   ]
 }

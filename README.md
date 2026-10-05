@@ -1,6 +1,10 @@
 # EcoFlow für IP-Symcon
 
-Bindet EcoFlow-Geräte (PowerOcean, PowerStream, STREAM, Delta, Wallbox, Smart Plug …) über die offizielle EcoFlow Open API in IP-Symcon ein.
+Bindet EcoFlow-Geräte (PowerOcean, PowerStream, STREAM, Delta, Wallbox, Smart Plug …) über die EcoFlow-Cloud in IP-Symcon ein.
+
+Zwei Anmeldearten:
+- **Entwickler-Schlüssel** (offizielle Open API) – z. B. für Smart Plugs
+- **App-Zugangsdaten** (E-Mail/Passwort wie in der EcoFlow-App) – für Geräte, die EcoFlow in der Open API sperrt, z. B. PowerOcean Plus. Inoffizieller Weg, EcoFlow kann ihn ändern.
 
 ## Funktionen
 - Liest zyklisch alle Datenpunkte eines Geräts und legt dafür automatisch Variablen an
@@ -14,8 +18,8 @@ Bindet EcoFlow-Geräte (PowerOcean, PowerStream, STREAM, Delta, Wallbox, Smart P
 3. Instanz hinzufügen: „EcoFlow Gerät (Cloud API)“ – eine Instanz pro Gerät.
 
 ## Einrichtung
-1. Access Key und Secret Key eintragen, Server „Europa“ wählen.
-2. Button „Geräte im EcoFlow-Konto auflisten“ → Seriennummer übernehmen.
+1. Anmeldeart wählen und Zugangsdaten eintragen (Entwickler-Schlüssel oder App-Zugangsdaten), Server „Europa“ wählen.
+2. Button „Geräte im EcoFlow-Konto auflisten“ → Seriennummer übernehmen (nur mit Entwickler-Schlüsseln).
 3. Button „Verfügbare Datenpunkte anzeigen“ → sehen, was das Gerät liefert.
 4. Optional Filter setzen, z. B. nur die Werte, die du wirklich brauchst.
 5. Optional unter „Stromüberschuss“ den Datenpunkt für die Netzleistung eintragen.

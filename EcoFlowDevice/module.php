@@ -3,7 +3,11 @@
 declare(strict_types=1);
 
 /**
- * EcoFlow-Gerät über die offizielle EcoFlow Open API (Cloud).
+ * EcoFlow-Gerät über die EcoFlow-Cloud.
+ * Zwei Anmeldearten:
+ *  0 = Entwickler-Schlüssel (offizielle Open API)
+ *  1 = App-Zugangsdaten (E-Mail/Passwort, wie die EcoFlow-App; nötig z. B. für PowerOcean Plus,
+ *      die EcoFlow für die Open API sperrt). Inoffizieller Weg, kann sich ändern.
  *
  * - Liest zyklisch alle Datenpunkte ("Quotas") eines Geräts und legt dafür Variablen an.
  * - Optional: Berechnung "Stromüberschuss" aus einem frei wählbaren Leistungswert (z. B. Netzleistung).
@@ -27,6 +31,10 @@ class EcoFlowDevice extends IPSModule
         parent::Create();
 
         // Zugang
+        $this->RegisterPropertyInteger('AuthMode', 0);
+        $this->RegisterPropertyString('Email', '');
+        $this->RegisterPropertyString('Password', '');
+        $this->RegisterAttributeString('AppToken', '');
         $this->RegisterPropertyString('AccessKey', '');
         $this->RegisterPropertyString('SecretKey', '');
         $this->RegisterPropertyInteger('Region', 0);
@@ -55,8 +63,10 @@ class EcoFlowDevice extends IPSModule
         $this->MaintainVariable('FeedInPower', 'Einspeiseleistung', VARIABLETYPE_FLOAT, '~Watt.3680', 1, $surplusActive);
         $this->MaintainVariable('Surplus', 'Stromüberschuss', VARIABLETYPE_BOOLEAN, '~Switch', 2, $surplusActive);
 
-        if (trim($this->ReadPropertyString('AccessKey')) === '' || trim($this->ReadPropertyString('SecretKey')) === ''
-            || $this->ReadPropertyString('SerialNumber') === '') {
+        // Bei geänderten Zugangsdaten neu anmelden
+        $this->WriteAttributeString('AppToken', '');
+
+        if (!$this->HasCredentials() || $this->GetSerial() === '') {
             $this->SetTimerInterval('Update', 0);
             $this->SetStatus(201);
             return;
@@ -95,8 +105,7 @@ class EcoFlowDevice extends IPSModule
     /** Alle Datenpunkte abrufen und Variablen aktualisieren. */
     public function Update(): bool
     {
-        $sn = $this->GetSerial();
-        $data = $this->Request('GET', '/iot-open/sign/device/quota/all', ['sn' => $sn]);
+        $data = $this->FetchAll();
         if ($data === null) {
             return false;
         }
@@ -133,8 +142,7 @@ class EcoFlowDevice extends IPSModule
     /** Gibt alle verfügbaren Datenpunkte mit aktuellem Wert aus (für die Auswahl im Filter). */
     public function ShowQuotas(): string
     {
-        $sn = $this->GetSerial();
-        $data = $this->Request('GET', '/iot-open/sign/device/quota/all', ['sn' => $sn]);
+        $data = $this->FetchAll();
         if ($data === null) {
             echo 'Abfrage fehlgeschlagen: ' . $this->lastError . PHP_EOL . $this->lastDiagnosis;
             return '';
@@ -152,6 +160,10 @@ class EcoFlowDevice extends IPSModule
     /** Listet alle Geräte des EcoFlow-Kontos (Seriennummer, Name, Online-Status). */
     public function ListDevices(): string
     {
+        if ($this->ReadPropertyInteger('AuthMode') === 1) {
+            echo 'Die Geräteliste gibt es nur mit Entwickler-Schlüsseln. Seriennummern stehen in der EcoFlow-App unter Geräteeinstellungen.';
+            return '';
+        }
         $data = $this->Request('GET', '/iot-open/sign/device/list', []);
         if ($data === null) {
             echo 'Abfrage fehlgeschlagen: ' . $this->lastError . PHP_EOL . $this->lastDiagnosis;
@@ -205,6 +217,119 @@ class EcoFlowDevice extends IPSModule
     // ------------------------------------------------------------------
     // Interne Funktionen
     // ------------------------------------------------------------------
+
+    private function HasCredentials(): bool
+    {
+        if ($this->ReadPropertyInteger('AuthMode') === 1) {
+            return trim($this->ReadPropertyString('Email')) !== '' && $this->ReadPropertyString('Password') !== '';
+        }
+        return trim($this->ReadPropertyString('AccessKey')) !== '' && trim($this->ReadPropertyString('SecretKey')) !== '';
+    }
+
+    /** Alle Werte des Geräts als flaches Array (Schlüssel => Wert). */
+    private function FetchAll(): ?array
+    {
+        if ($this->ReadPropertyInteger('AuthMode') === 1) {
+            $data = $this->AppFetch();
+            return $data === null ? null : $this->FlattenTyped($data);
+        }
+        return $this->Request('GET', '/iot-open/sign/device/quota/all', ['sn' => $this->GetSerial()]);
+    }
+
+    // ---------- App-Anmeldung (E-Mail/Passwort) ----------
+
+    private function AppLogin(): bool
+    {
+        $body = [
+            'email'    => trim($this->ReadPropertyString('Email')),
+            'password' => base64_encode($this->ReadPropertyString('Password')),
+            'scene'    => 'IOT_APP',
+            'userType' => 'ECOFLOW'
+        ];
+        $this->lastDiagnosis = 'Anmeldung als ' . $body['email'];
+        $response = $this->HttpJson('POST', $this->Host() . '/auth/login', ['lang: de_DE', 'Content-Type: application/json'], $body);
+        if ($response === null) {
+            return false;
+        }
+        if ((string) ($response['code'] ?? '') !== '0' || empty($response['data']['token'])) {
+            $this->Fail('Anmeldung fehlgeschlagen: ' . ($response['message'] ?? 'unbekannte Antwort'));
+            return false;
+        }
+        $this->WriteAttributeString('AppToken', (string) $response['data']['token']);
+        return true;
+    }
+
+    private function AppFetch(bool $retry = true): ?array
+    {
+        if ($this->ReadAttributeString('AppToken') === '' && !$this->AppLogin()) {
+            return null;
+        }
+        $url = $this->Host() . '/provider-service/user/device/detail?sn=' . urlencode($this->GetSerial());
+        $this->lastDiagnosis = 'URL: /provider-service/user/device/detail?sn=' . $this->GetSerial();
+        $response = $this->HttpJson('GET', $url, ['lang: de_DE', 'Authorization: Bearer ' . $this->ReadAttributeString('AppToken')]);
+
+        $ok = $response !== null && (string) ($response['code'] ?? '') === '0' && is_array($response['data'] ?? null);
+        if (!$ok) {
+            // Token abgelaufen o. Ä.: einmal neu anmelden
+            if ($retry) {
+                $this->WriteAttributeString('AppToken', '');
+                return $this->AppFetch(false);
+            }
+            if ($response !== null) {
+                $this->Fail('API-Fehler: ' . ($response['message'] ?? 'keine Daten'));
+            }
+            return null;
+        }
+        return $response['data'];
+    }
+
+    private function Host(): string
+    {
+        return self::HOSTS[$this->ReadPropertyInteger('Region')] ?? self::HOSTS[0];
+    }
+
+    /** Einfache HTTP-Anfrage mit JSON-Antwort (für die App-Anmeldung). */
+    private function HttpJson(string $method, string $url, array $headers, ?array $body = null): ?array
+    {
+        $curl = curl_init($url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 15);
+        if ($body !== null) {
+            curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($body));
+        }
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        $raw = curl_exec($curl);
+        $httpCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($curl);
+        curl_close($curl);
+
+        $this->SendDebug('Request', "$method $url", 0);
+        $this->SendDebug('Response', (string) $raw, 0);
+
+        $response = json_decode((string) $raw, true);
+        if ($raw === false || !is_array($response)) {
+            $this->Fail("HTTP-Fehler $httpCode $curlError");
+            return null;
+        }
+        return $response;
+    }
+
+    /** Verschachtelte Objekte zu "a.b.c" auflösen, Typen erhalten; Listen bleiben Arrays. */
+    private function FlattenTyped(array $data, string $prefix = ''): array
+    {
+        $out = [];
+        foreach ($data as $key => $value) {
+            $newKey = $prefix === '' ? (string) $key : $prefix . '.' . $key;
+            if (is_array($value) && $value !== [] && array_keys($value) !== range(0, count($value) - 1)) {
+                $out = array_merge($out, $this->FlattenTyped($value, $newKey));
+            } else {
+                $out[$newKey] = $value;
+            }
+        }
+        return $out;
+    }
 
     private function WriteQuotaVariable(string $key, $value, int $position): void
     {
