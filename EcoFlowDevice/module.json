@@ -1,0 +1,13 @@
+{
+  "id": "{B4D2D4F7-7BE1-4F7E-BA0B-3A3C20E923B5}",
+  "name": "EcoFlowDevice",
+  "type": 3,
+  "vendor": "EcoFlow",
+  "aliases": [
+    "EcoFlow Cloud API"
+  ],
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "ECO"
+}

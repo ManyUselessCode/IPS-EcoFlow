@@ -1,0 +1,42 @@
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    // Autovervollständigung für IPS_*, EIB_*, KNX_* usw. über die offiziellen Symcon-Stubs
+    "intelephense.environment.includePaths": [
+      "/Users/sven/Documents/Symcon/IPS-EcoFlow/.symcon-stubs"
+    ],
+    "intelephense.environment.phpVersion": "8.2.0",
+    "files.exclude": { ".symcon-stubs": true },
+    "[php]": { "editor.tabSize": 4, "editor.insertSpaces": true },
+    "git.autofetch": true
+  },
+  "extensions": {
+    "recommendations": [
+      "bmewburn.vscode-intelephense-client"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Symcon-Stubs laden/aktualisieren",
+        "type": "shell",
+        "options": { "cwd": "${workspaceFolder:IPS-EcoFlow}" },
+        "command": "if [ -d .symcon-stubs ]; then git -C .symcon-stubs pull; else git clone --depth 1 https://github.com/symcon/SymconStubs.git .symcon-stubs; fi",
+        "problemMatcher": []
+      },
+      {
+        "label": "Veröffentlichen (Commit + Push)",
+        "type": "shell",
+        "options": { "cwd": "${workspaceFolder:IPS-EcoFlow}" },
+        "command": "git add -A && git commit -m \"${input:message}\" && git push",
+        "problemMatcher": []
+      }
+    ],
+    "inputs": [
+      { "id": "message", "type": "promptString", "description": "Was hast du geändert?", "default": "Update" }
+    ]
+  }
+}

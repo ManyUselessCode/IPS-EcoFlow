@@ -1,0 +1,44 @@
+{
+  "elements": [
+    { "type": "Label", "caption": "Zugang zur EcoFlow Open API (Schlüssel aus developer-eu.ecoflow.com, Bereich \"Security\")" },
+    { "type": "ValidationTextBox", "name": "AccessKey", "caption": "Access Key", "width": "400px" },
+    { "type": "PasswordTextBox", "name": "SecretKey", "caption": "Secret Key", "width": "400px" },
+    {
+      "type": "Select", "name": "Region", "caption": "Server",
+      "options": [
+        { "caption": "Europa (api-e.ecoflow.com)", "value": 0 },
+        { "caption": "Amerika (api-a.ecoflow.com)", "value": 1 },
+        { "caption": "Global (api.ecoflow.com)", "value": 2 }
+      ]
+    },
+    { "type": "ValidationTextBox", "name": "SerialNumber", "caption": "Seriennummer des Geräts" },
+    { "type": "NumberSpinner", "name": "UpdateInterval", "caption": "Abfrageintervall", "suffix": "Sekunden", "minimum": 10 },
+    {
+      "type": "ExpansionPanel", "caption": "Datenpunkte filtern",
+      "items": [
+        { "type": "Label", "caption": "Leer = alle Datenpunkte als Variablen anlegen. Sonst Liste der gewünschten Datenpunkte, getrennt durch Komma. Platzhalter am Ende erlaubt, z. B. 20_1.*" },
+        { "type": "ValidationTextBox", "name": "QuotaFilter", "caption": "Filter", "width": "100%" }
+      ]
+    },
+    {
+      "type": "ExpansionPanel", "caption": "Stromüberschuss (z. B. für die Poolsteuerung)",
+      "items": [
+        { "type": "Label", "caption": "Datenpunkt mit der Netzleistung bzw. Einspeiseleistung in Watt. Leer = Funktion aus." },
+        { "type": "ValidationTextBox", "name": "SurplusKey", "caption": "Datenpunkt", "width": "400px" },
+        { "type": "CheckBox", "name": "SurplusFeedInNegative", "caption": "Einspeisung wird als negativer Wert geliefert" },
+        { "type": "NumberSpinner", "name": "SurplusOnWatt", "caption": "Überschuss EIN ab", "suffix": "W" },
+        { "type": "NumberSpinner", "name": "SurplusOffWatt", "caption": "Überschuss AUS unter", "suffix": "W" }
+      ]
+    }
+  ],
+  "actions": [
+    { "type": "Button", "caption": "Geräte im EcoFlow-Konto auflisten", "onClick": "EFD_ListDevices($id);" },
+    { "type": "Button", "caption": "Verfügbare Datenpunkte anzeigen", "onClick": "EFD_ShowQuotas($id);" },
+    { "type": "Button", "caption": "Jetzt aktualisieren", "onClick": "if (EFD_Update($id)) { echo 'Aktualisiert.'; } else { echo 'Fehler, siehe Meldungen.'; }" }
+  ],
+  "status": [
+    { "code": 102, "icon": "active", "caption": "Verbunden" },
+    { "code": 201, "icon": "inactive", "caption": "Access Key, Secret Key und Seriennummer eintragen" },
+    { "code": 202, "icon": "error", "caption": "Fehler bei der Abfrage (Schlüssel, Server oder Seriennummer prüfen)" }
+  ]
+}
