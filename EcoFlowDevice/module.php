@@ -52,7 +52,7 @@ class EcoFlowDevice extends IPSModule
         $this->MaintainVariable('FeedInPower', 'Einspeiseleistung', VARIABLETYPE_FLOAT, '~Watt.3680', 1, $surplusActive);
         $this->MaintainVariable('Surplus', 'Stromüberschuss', VARIABLETYPE_BOOLEAN, '~Switch', 2, $surplusActive);
 
-        if ($this->ReadPropertyString('AccessKey') === '' || $this->ReadPropertyString('SecretKey') === ''
+        if (trim($this->ReadPropertyString('AccessKey')) === '' || trim($this->ReadPropertyString('SecretKey')) === ''
             || $this->ReadPropertyString('SerialNumber') === '') {
             $this->SetTimerInterval('Update', 0);
             $this->SetStatus(201);
@@ -300,15 +300,15 @@ class EcoFlowDevice extends IPSModule
      */
     private function Request(string $method, string $path, array $query, ?array $body = null, bool $allowEmptyData = false): ?array
     {
-        $accessKey = $this->ReadPropertyString('AccessKey');
-        $secretKey = $this->ReadPropertyString('SecretKey');
+        $accessKey = trim($this->ReadPropertyString('AccessKey'));
+        $secretKey = trim($this->ReadPropertyString('SecretKey'));
         if ($accessKey === '' || $secretKey === '') {
             $this->SetStatus(201);
             return null;
         }
 
         $nonce = (string) random_int(100000, 999999);
-        $timestamp = (string) round(microtime(true) * 1000);
+        $timestamp = sprintf('%.0f', floor(microtime(true) * 1000));
 
         $signParams = $this->Flatten(array_merge($query, $body ?? []));
         ksort($signParams, SORT_STRING);
